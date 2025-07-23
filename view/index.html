@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Todo List</title>
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <h1>Todo List</h1>
+        <input type="text" id="todoInput" placeholder="Add a new todo">
+        <button onclick="addTodo()">Tambah</button>
+        <ul id="todoList"></ul>
+
+        <script>
+            function addTodo(){
+                const taskInput = document.getElementById('todoInput');
+                const tasklist = document.getElementById('todoList');
+
+                if (taskInput.value.trim()=== '') return;
+
+                const li = document.createElement('li');
+                li.textContent = taskInput.value;
+                tasklist.appendChild(li);
+                taskInput.value = '';
+
+                //untuk menghapus todo
+                li.addEventListener('click', () =>{
+                    li.remove();
+                });
+            }
+        </script>
+    </body>
+</html>
