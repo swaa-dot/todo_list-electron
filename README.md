@@ -46,7 +46,7 @@ Or (depending on the config):
 ```bash
 npx electron-packager . todo-list --platform=win32 --arch=x64
 ```
-⚠️ Make sure you have electron-packager installed:
+### ⚠️ **Make sure you have electron-packager installed:**
 ```bash
 npm install --save-dev electron-packager
 ```
