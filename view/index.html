@@ -1,33 +1,139 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>Todo List</title>
-        <link rel="stylesheet" href="style.css">
-    </head>
-    <body>
-        <h1>Todo List</h1>
-        <input type="text" id="todoInput" placeholder="Add a new todo">
-        <button onclick="addTodo()">Tambah</button>
-        <ul id="todoList"></ul>
 
-        <script>
-            function addTodo(){
-                const taskInput = document.getElementById('todoInput');
-                const tasklist = document.getElementById('todoList');
+<head>
+    <meta charset="UTF-8">
+    <title>Todo List</title>
+    <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+<div class="container">
+    <h1><i class="fas fa-tasks"></i> Todo List</h1>
+    <div class="input-container">
+        <input type="text" id="todoInput" placeholder="Add a new task...">
+        <button id="addBtn"><i class="fas fa-plus"></i> Add</button>
+    </div>
+    <ul id="todoList"></ul>
+</div>
 
-                if (taskInput.value.trim()=== '') return;
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const todoInput = document.getElementById('todoInput');
+        const addBtn = document.getElementById('addBtn');
+        const todoList = document.getElementById('todoList');
 
-                const li = document.createElement('li');
-                li.textContent = taskInput.value;
-                tasklist.appendChild(li);
-                taskInput.value = '';
+        //laod todos from database
+        await loadTodos();
 
-                //untuk menghapus todo
-                li.addEventListener('click', () =>{
-                    li.remove();
-                });
+        //add new Todos
+        addBtn.addEventListener('click', addTodo);
+        todoInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addTodo();
+        });
+
+        async function loadTodos() {
+            const todos = await window.electronAPI.getTodos();
+            todoList.innerHTML = '';
+            todos.forEach(todo => {
+                renderTodoItem(todo);
+            });
+        }
+
+        function renderTodoItem(todo) {
+            const li = document.createElement('li');
+            li.className = todo.completed ? 'completed' : '';
+            li.dataset.id = todo.id;
+
+            li.innerHTML = `
+                    <span class="task-text">${todo.task}</span>
+                    <div class="actions">
+                        <i class="fas fa-edit edit-btn"></i>
+                        <i class="fas ${todo.completed ? 'fa-times' : 'fa-check'} toggle-btn"></i>
+                        <i class="fas fa-trash delete-btn"></i>
+                    </div>
+                    <input type="text" class="edit-input" value="${todo.task}" style="display: none;">
+                    `;
+
+            todoList.appendChild(li);
+
+            //element references
+            const taskText = li.querySelector('.task-text');
+            const editInput = li.querySelector('.edit-input');
+            const editBtn = li.querySelector('.edit-btn');
+            const deleteBtn = li.querySelector('.delete-btn');
+            const toggleBtn = li.querySelector('.toggle-btn');
+
+            //edit functionality
+            editBtn.addEventListener('click', (e)=>{
+                e.stopPropagation();
+                startEditing(li, taskText, editInput);
+            });
+            editInput.addEventListener('keypress', async (e)=>{
+                if (e.key === 'Enter'){
+                    const newTask = editInput.value.trim();
+                    if (newTask && newTask !== todo.task){
+                        const success = await window.electronAPI.updateTodo(todo.id, newTask);
+                        if (success){
+                            todo.task = newTask;
+                            taskText.textContent = newTask;
+                        }
+                    }
+                    stopEditing(li, taskText, editInput);
+                }
+            });
+            editInput.addEventListener('blur', ()=>{
+                stopEditing(li, taskText, editInput);
+            });
+
+            //Delete fuctionality
+            deleteBtn.addEventListener('click', async (e)=>{
+                e.stopPropagation();
+                const success = await window.electronAPI.deleteTodo(todo.id);
+                if (success) li.remove();
+
+            });
+
+             // Toggle functionality
+            toggleBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const newStatus = !todo.completed;
+                const success = await window.electronAPI.toggleTodo(todo.id, newStatus);
+                if (success) {
+                    todo.completed = newStatus;
+                    li.className = todo.completed ? 'completed' : '';
+                    toggleBtn.className = `fas ${todo.completed ? 'fa-undo' : 'fa-check'} toggle-btn`;
+                }
+            });
+        }
+
+        function startEditing(li, taskText, editInput) {
+            taskText.style.display = 'none';
+            editInput.style.display = 'block';
+            editInput.focus();
+            editInput.select();
+            li.classList.add('editing');
+        }
+
+        function stopEditing(li, taskText, editInput) {
+            taskText.style.display = 'block';
+            editInput.style.display = 'none';
+            li.classList.remove('editing');
+        }
+
+        async function addTodo() {
+            const task = todoInput.value.trim();
+            if (task === '') return;
+
+            const success = await window.electronAPI.addTodo(task);
+            if (success) {
+                todoInput.value = '';
+                await loadTodos();
             }
-        </script>
-    </body>
+
+        }      
+    });
+</script>
+</body>
+
 </html>

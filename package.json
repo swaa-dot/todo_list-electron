@@ -12,5 +12,11 @@
   "description": "",
   "devDependencies": {
     "electron": "^37.2.3"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.0",
+    "electron-builder": "^26.0.12",
+    "sequelize": "^6.37.7",
+    "sqlite3": "^5.1.7"
   }
 }
