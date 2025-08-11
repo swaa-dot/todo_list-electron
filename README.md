@@ -6,10 +6,10 @@ A simple ToDo List desktop application built with [Electron](https://www.electro
 
 ## 📦 Features
 
-- Add, update, and delete tasks
-- Persistent storage (optional if added)
-- Desktop application feel
-- Cross-platform (Windows, Mac, Linux)
+- Add, update, edit and delete tasks
+- Reminder & Deadline (soon)
+- Priority (soon)
+- Export to csv (soon)
 
 ---
 
