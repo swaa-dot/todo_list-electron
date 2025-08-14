@@ -5,6 +5,10 @@ const { create } = require('domain');
 
 let mainWindow;
 
+//jalankan seeder untuk kategori dan tag
+require(path.join(__dirname, 'seeder', 'category'));
+require(path.join(__dirname, 'seeder', 'tag'));
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 800,
@@ -29,7 +33,7 @@ app.on('ready', createWindow);
 // IPC Handlers
 ipcMain.handle('get-todos', async () => {
   return new Promise((resolve) => {
-    db.getAllTodos((todos) => {
+    db.getTodos((todos) => {
       resolve(todos);
     });
   });
@@ -65,6 +69,30 @@ ipcMain.handle('toggle-todo', async (event, id, completed) => {
       resolve(success);
     });
   });
+});
+
+ipcMain.handle('get-categories', async () => {
+    return new Promise((resolve) => {
+        db.getCategories((categories) => {
+            resolve(categories);
+        });
+    });
+});
+
+ipcMain.handle('get-tags', async () => {
+    return new Promise((resolve) => {
+        db.getTags((tags) => {
+            resolve(tags);
+        });
+    });
+});
+
+ipcMain.handle('add-todo-with-category-and-tags', async (event, task, categoryId, tagIds) => {
+    return new Promise((resolve) => {
+        db.addTodoWithCategoryAndTags(task, categoryId, tagIds, (success) => {
+            resolve(success);
+        });
+    });
 });
 
 app.on('window-all-closed', function () {
