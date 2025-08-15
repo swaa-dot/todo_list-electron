@@ -29,21 +29,45 @@
         <ul id="todoList"></ul>
     </div>
 
+    <!-- Modal untuk detail todo -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Todo Details</h2>
+            <div id="modalContent">
+                <!-- Detail akan dimuat di sini -->
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             const todoInput = document.getElementById('todoInput');
             const addBtn = document.getElementById('addBtn');
             const todoList = document.getElementById('todoList');
             const categorySelect = document.getElementById('categorySelect');
-            const tagSelect = document.getElementById('tagContainer');
+            const modal = document.getElementById('detailModal');
+            const modalContent = document.getElementById('modalContent');
+            const closeModal = document.querySelector('.close-modal');
 
-            //laod todos from database
+            // Load todos from database
             await loadTodos();
 
-            //add new Todos
+            // Add new Todos
             addBtn.addEventListener('click', addTodo);
             todoInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') addTodo();
+            });
+
+            // Modal close handlers
+            closeModal.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+
+            window.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
             });
 
             async function loadTodos() {
@@ -62,7 +86,6 @@
                 const categoryDisplay = todo.category ? `<span class="todo-category" style="background-color: #e1f5fe; padding: 2px 6px; border-radius: 4px; 
                 margin-right: 5px;">${todo.category.name}</span>` : '';
 
-                // Buat elemen untuk menampilkan tag
                 const tagsDisplay = todo.tags && todo.tags.length > 0
                     ? `<div class="todo-tags">${todo.tags.map(tag =>
                         `<span class="todo-tag" style="background-color: #e8f5e9; padding: 2px 6px; border-radius: 4px; margin-right: 5px; font-size: 0.8em;">${tag.name}</span>`
@@ -74,23 +97,32 @@
             ${categoryDisplay}
                     <span class="task-text">${todo.task}</span>
                     <div class="actions">
+                        <i class="fas fa-info-circle detail-btn" title="View Details"></i>
                         <i class="fas fa-edit edit-btn"></i>
-                        <i class="fas ${todo.completed ? 'fa-times' : 'fa-check'} toggle-btn"></i>
+                        <i class="fas ${todo.completed ? 'fa-undo' : 'fa-check'} toggle-btn" title="${todo.completed ? 'Mark Incomplete' : 'Mark Complete'}"></i>
                         <i class="fas fa-trash delete-btn"></i>
                     </div>
                     <input type="text" class="edit-input" value="${todo.task}" style="display: none;">
+                    ${tagsDisplay}
                     `;
 
                 todoList.appendChild(li);
 
-                //element references
+                // Element references
+                const detailBtn = li.querySelector('.detail-btn');
                 const taskText = li.querySelector('.task-text');
                 const editInput = li.querySelector('.edit-input');
                 const editBtn = li.querySelector('.edit-btn');
                 const deleteBtn = li.querySelector('.delete-btn');
                 const toggleBtn = li.querySelector('.toggle-btn');
 
-                //edit functionality
+                // Detail functionality
+                detailBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    showTodoDetails(todo);
+                });
+
+                // Edit functionality
                 editBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     startEditing(li, taskText, editInput);
@@ -112,12 +144,11 @@
                     stopEditing(li, taskText, editInput);
                 });
 
-                //Delete fuctionality
+                // Delete functionality
                 deleteBtn.addEventListener('click', async (e) => {
                     e.stopPropagation();
                     const success = await window.electronAPI.deleteTodo(todo.id);
                     if (success) li.remove();
-
                 });
 
                 // Toggle functionality
@@ -131,6 +162,49 @@
                         toggleBtn.className = `fas ${todo.completed ? 'fa-undo' : 'fa-check'} toggle-btn`;
                     }
                 });
+            }
+
+            function showTodoDetails(todo) {
+                const modal = document.getElementById('detailModal');
+                const modalContent = document.getElementById('modalContent');
+
+                const createdAt = todo.createdAt ? new Date(todo.createdAt).toLocaleString() : 'N/A';
+                const updatedAt = todo.updatedAt ? new Date(todo.updatedAt).toLocaleString() : 'N/A';
+
+                const categoryInfo = todo.category
+                    ? `<div class="detail-item">
+                    <span class="detail-label">Category: </span>
+                    <span class="detail-value">${todo.category.name}</span>
+                    </div>` : '';
+
+                const tagsInfo = todo.tags && todo.tags.length > 0
+                    ? `<div class="detail-item">
+                        <span class="detail-label">Tags:</span>
+                        <span class="detail-value">${todo.tags.map(tag => tag.name).join(', ')}</span>
+                        </div>`
+                    : '';
+
+                modalContent.innerHTML = `
+                    <div class="detail-item">
+                        <span class="detail-label">Task:</span>
+                        <span class="detail-value">${todo.task}</span>
+                        </div>
+                    ${categoryInfo}
+                    ${tagsInfo}
+                    <div class="detail-item">
+                        <span class="detail-label">Status:</span>
+                        <span class="detail-value">${todo.completed ? 'Completed' : 'Pending'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Created: </span>
+                            <span class="detail-value">${createdAt}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Updated: </span>
+                            <span class="detail-value">${updatedAt}</span>
+                        </div>`;
+
+                modal.style.display = 'block';
             }
 
             function startEditing(li, taskText, editInput) {
@@ -173,7 +247,6 @@
                     tagContainer.appendChild(label);
                     tagContainer.appendChild(document.createElement('br'));
                 });
-
             }
 
             // Panggil saat DOM loaded
@@ -184,17 +257,16 @@
                 const categoryId = categorySelect.value;
                 const selectedTags = Array.from(document.querySelectorAll('#tagCheckboxes input[type="checkbox"]:checked'))
                     .map(cb => cb.value);
-                    
+
                 if (!task) return;
 
                 const success = await window.electronAPI.addTodoWithCategoryAndTags(task, categoryId, selectedTags);
                 if (success) {
                     todoInput.value = '';
                     categorySelect.value = '';
-                    document.querySelectorAll('.tag-checkbox').forEach(cb => cb.checked = false);
+                    document.querySelectorAll('#tagCheckboxes input[type="checkbox"]').forEach(cb => cb.checked = false);
                     await loadTodos();
                 }
-
             }
         });
     </script>
